@@ -1,17 +1,16 @@
 
 class Event:
-    def __init__(self, name, starttime, endtime):
+    def __init__(self, name, organizer):
         self.name = name
-        self.starttime = starttime
-        self.endtime = endtime
+        self.organizer = organizer
+        self.starttime = None
+        self.endtime = None
         self.location = None
 
     def __eq__(self, other):
         return self.name == other.name and \
-            self.starttime == other.starttime and \
-            self.endtime == other.endtime
+            self.organizer == other.organizer
 
     def __ne__(self, other):
         return self.name != other.name or \
-            self.starttime != other.starttime or \
-            self.endtime != other.endtime
+            self.organizer != other.organizer

@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<title>Event</title>
+<body>
+    <h1>Event: {{ event_name }}!</h1>
+    <h2>Organizer: {{ org_name }}</h2>
+    <br><br>
+    <h2>If you need a ride...</h2>
+    <form method="post" action="need_a_ride" >
+        Your Name: <input type="text" name="name" />
+        <br><br>
+        Your Location: <input type="text" name="location" />
+        <br><br>
+        Number of seats I need: <input type="number" name="num_seats" />
+        <input type="submit" value="I need a ride" >
+    </form>
+
+    <h2>If you have seats to spare...</h2>
+    <form method="post" action="have_a_ride" >
+        Your Name: <input type="text" name="name" />
+        <br><br>
+        Your Location: <input type="text" name="location" />
+        <br><br>
+        Number of seats I can offer: <input type="number" name="num_seats" />
+        <input type="submit" value="I can offer rides" >
+    </form>
+</body>
+</html>
