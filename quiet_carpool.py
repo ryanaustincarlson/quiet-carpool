@@ -8,6 +8,7 @@ app = Flask(__name__)
 from Person import Person
 from Event import Event
 from Reservation import Reservation
+from Rideshare import Rideshare
 from ReservationManager import ReservationManager
 
 PICKLE_FNAME = 'reservation-manager.pickle'
@@ -55,11 +56,39 @@ def event(event_id=None):
 
 @app.route('/event/<event_id>/need_a_ride', methods=['POST'])
 def need_a_ride(event_id=None):
-    return 'You Need A Ride'
+    reservation = manager.reservation_map[event_id]
+
+    num_seats = int(request.form['num_seats'])
+
+    open_rideshares = reservation.get_open_rideshares(num_seats)
+
+    for rideshare in open_rideshares:
+        print(rideshare)
+
+    html = 'You Need A Ride! Number of rides availabe: '
+    html += str(len(open_rideshares))
+    return html
+
 
 @app.route('/event/<event_id>/have_a_ride', methods=['POST'])
 def have_a_ride(event_id=None):
+    pdb.set_trace()
+    reservation = manager.reservation_map[event_id]
+
+    name = request.form['name']
+    email = request.form['email']
+    # location = request.form['location']
+    num_seats = int(request.form['num_seats'])
+
+    p = Person(name, email)
+    rideshare = Rideshare(p, num_seats)
+    reservation.rideshares.add(rideshare)
+
+    # request.form
+
+    # rideshare = Rideshare()
     return 'You can offer rides'
+
 
 def serialize_manager():
     with open(PICKLE_FNAME, 'w') as f:

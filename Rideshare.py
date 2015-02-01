@@ -7,13 +7,13 @@ class Rideshare:
         self.ride_sharer = ride_sharer
         self.number_seats = number_seats
 
-        self._seats_taken = set()
+        self.riders = set()
 
-    def reserve_seat(self, reserver):
-        seats_available = len(self._seats_taken) < self.number_seats
+    def reserve_seat(self, rider):
+        seats_available = len(self.riders) < self.number_seats
         if seats_available:
-            self._seats_taken.add(reserver)
+            self.riders.add(rider)
         return seats_available
 
     def seats_available(self):
-        return self.number_seats - len(self._seats_taken)
+        return self.number_seats - len(self.riders)
