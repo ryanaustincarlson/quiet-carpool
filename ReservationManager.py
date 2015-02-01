@@ -1,5 +1,6 @@
 
-import uuid
+# import uuid
+import random
 
 from Reservation import Reservation
 
@@ -16,4 +17,5 @@ class ReservationManager:
 
     @staticmethod
     def generate_uuid():
-        return str(uuid.uuid4())
+        return str(random.randint(10, 10000))
+        # return str(uuid.uuid4())
