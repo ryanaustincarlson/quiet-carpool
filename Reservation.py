@@ -20,9 +20,15 @@ class Reservation:
 
     def get_rideshare_request_matches(self, rideshare):
         matches = set()
-        for request in self.rideshare_requests.values():
-            if rideshare in request.acceptable_rideshares:
-                matches.add(request)
+        for request_id in self.rideshare_requests:
+            rideshare_request = self.rideshare_requests[request_id]
+
+            if rideshare_request.requester in rideshare.riders:
+                continue
+
+            if rideshare in rideshare_request.acceptable_rideshares:
+                matches.add((rideshare_request, request_id))
+
         return matches
 
     def make_reservation(self, rideshare, reserver):

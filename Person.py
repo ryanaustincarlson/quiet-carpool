@@ -11,3 +11,6 @@ class Person:
 
     def __ne__(self, other):
         return self.email != other.email
+
+    def __hash__(self):
+        return self.email.__hash__()
