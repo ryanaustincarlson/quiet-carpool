@@ -8,9 +8,22 @@ class Reservation:
         self.rideshares = {}
         self.rideshare_requests = {}
 
+        self.possible_matches = set()
+
     def get_open_rideshares(self, seats_needed):
-        return set([rideshare for rideshare in self.rideshares.values() if
-                    rideshare.seats_available() >= seats_needed])
+        open_rideshares = set()
+        for rideshare_id in self.rideshares:
+            rideshare = self.rideshares[rideshare_id]
+            if rideshare.seats_available() >= seats_needed:
+                open_rideshares.add((rideshare, rideshare_id))
+        return open_rideshares
+
+    def get_rideshare_request_matches(self, rideshare):
+        matches = set()
+        for request in self.rideshare_requests.values():
+            if rideshare in request.acceptable_rideshares:
+                matches.add(request)
+        return matches
 
     def make_reservation(self, rideshare, reserver):
         rideshare.reserve_seat(reserver)
