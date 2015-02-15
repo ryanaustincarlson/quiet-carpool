@@ -18,6 +18,7 @@ try:
     with open(PICKLE_FNAME, 'rb') as f:
         manager = pickle.load(f)
 except:
+    print("creating a brand new manager")
     manager = ReservationManager()
     reservation = Reservation(Event('partytime', Person('ryan', 'rcarlson@something.com')))
     manager.reservation_map['1'] = reservation
