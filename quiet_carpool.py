@@ -66,7 +66,9 @@ def event(event_id=None):
                                    org_name=reservation.event.organizer.name)
     except Exception as e:
         print('>>> error!')
-        print(e)
+        import traceback
+        print(traceback.format_exc())
+        print(manager.reservation_map)
         raise e
 
 
