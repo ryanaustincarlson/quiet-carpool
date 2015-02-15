@@ -221,8 +221,9 @@ def rides_reserved(event_id=None, rideshare_id=None):
 
 
 def serialize_manager():
-    with open(PICKLE_FNAME, 'wb') as f:
-        pickle.dump(manager, f)
+    pass
+    # with open(PICKLE_FNAME, 'wb') as f:
+    #     pickle.dump(manager, f)
 
 if __name__ == '__main__':
     app.run(debug=True)
