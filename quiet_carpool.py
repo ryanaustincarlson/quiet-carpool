@@ -58,6 +58,8 @@ def event(event_id=None):
             event_id = manager.register_event(event)
             serialize_manager()
 
+            print('registered event: {}'.format(manager.reservation_map))
+
             return redirect('/event/{}'.format(event_id))
         else:
             reservation = manager.reservation_map[event_id]
@@ -75,62 +77,69 @@ def event(event_id=None):
 @app.route('/event/<event_id>/request_ride', methods=['POST'])
 @app.route('/event/<event_id>/request_ride/<ride_request_id>/', methods=['GET'])
 def need_a_ride(event_id=None, ride_request_id=None):
-    reservation = manager.reservation_map[event_id]
-    if ride_request_id is None:
-        name = request.form['name']
-        email = request.form['email']
-        num_seats = int(request.form['num_seats'])
+    try:
+        reservation = manager.reservation_map[event_id]
+        if ride_request_id is None:
+            name = request.form['name']
+            email = request.form['email']
+            num_seats = int(request.form['num_seats'])
 
-        # create a request
-        rideshare_request = RideshareRequest(Person(name, email), num_seats)
-        request_id = reservation.register_rideshare_request(rideshare_request)
-        serialize_manager()
-        return redirect('/event/{}/request_ride/{}'.format(
-            event_id, request_id))
-
-    else:
-        rideshare_request = reservation.rideshare_requests[ride_request_id]
-
-        match = None
-        for rideshare_id in reservation.rideshares:
-            rideshare = reservation.rideshares[rideshare_id]
-            if rideshare_request.requester in rideshare.riders:
-                match = rideshare.ride_sharer
-                break
-
-        html = ''
-        if match is not None:
-            html += "You've been matched with {}".format(match.name)
+            # create a request
+            rideshare_request = RideshareRequest(Person(name, email), num_seats)
+            request_id = reservation.register_rideshare_request(rideshare_request)
+            serialize_manager()
+            return redirect('/event/{}/request_ride/{}'.format(
+                event_id, request_id))
 
         else:
+            rideshare_request = reservation.rideshare_requests[ride_request_id]
 
-            open_rideshares = reservation.get_open_rideshares(
-                rideshare_request.number_seats)
+            match = None
+            for rideshare_id in reservation.rideshares:
+                rideshare = reservation.rideshares[rideshare_id]
+                if rideshare_request.requester in rideshare.riders:
+                    match = rideshare.ride_sharer
+                    break
 
-            if len(open_rideshares) == 0:
-                html = 'Sorry, there are no available rideshares at this time. '
-                html += 'Check back soon to see when rides become available'
+            html = ''
+            if match is not None:
+                html += "You've been matched with {}".format(match.name)
+
             else:
-                html = 'There {} {} ride{} available'.format(
-                    'are' if len(open_rideshares) != 1 else 'is',
-                    len(open_rideshares),
-                    's' if len(open_rideshares) != 1 else '')
-                html += '<br><br>'
-                html += 'Select any rides you would be happy taking'
-                html += '<form action="requested" method="post">'
-                for rideshare, rideshare_id in open_rideshares:
-                    ride_sharer = rideshare.ride_sharer
-                    html += '<input type="checkbox" '
-                    html += 'name="id" value="{}" '.format(rideshare_id)
-                    html += '/>'
-                    html += ' {} ({} seat{})'.format(
-                        ride_sharer.name, rideshare.seats_available(),
-                        's' if rideshare.seats_available() != 1 else '')
-                    html += ' <br>'
-                html += '<input type="submit" value="Submit">'
-                html += '</form>'
 
-        return html
+                open_rideshares = reservation.get_open_rideshares(
+                    rideshare_request.number_seats)
+
+                if len(open_rideshares) == 0:
+                    html = 'Sorry, there are no available rideshares at this time. '
+                    html += 'Check back soon to see when rides become available'
+                else:
+                    html = 'There {} {} ride{} available'.format(
+                        'are' if len(open_rideshares) != 1 else 'is',
+                        len(open_rideshares),
+                        's' if len(open_rideshares) != 1 else '')
+                    html += '<br><br>'
+                    html += 'Select any rides you would be happy taking'
+                    html += '<form action="requested" method="post">'
+                    for rideshare, rideshare_id in open_rideshares:
+                        ride_sharer = rideshare.ride_sharer
+                        html += '<input type="checkbox" '
+                        html += 'name="id" value="{}" '.format(rideshare_id)
+                        html += '/>'
+                        html += ' {} ({} seat{})'.format(
+                            ride_sharer.name, rideshare.seats_available(),
+                            's' if rideshare.seats_available() != 1 else '')
+                        html += ' <br>'
+                    html += '<input type="submit" value="Submit">'
+                    html += '</form>'
+
+            return html
+    except Exception as e:
+        print('>>> error!')
+        import traceback
+        print(traceback.format_exc())
+        print(manager.reservation_map)
+        raise e
 
 
 @app.route('/event/<event_id>/request_ride/<ride_request_id>/requested',
@@ -153,60 +162,67 @@ def rides_requested(event_id=None, ride_request_id=None):
 @app.route('/event/<event_id>/rideshare', methods=['POST'])
 @app.route('/event/<event_id>/rideshare/<rideshare_id>/', methods=['GET'])
 def have_a_ride(event_id=None, rideshare_id=None):
-    reservation = manager.reservation_map[event_id]
-    if rideshare_id is None:
-        name = request.form['name']
-        email = request.form['email']
-        # location = request.form['location']
-        num_seats = int(request.form['num_seats'])
+    try:
+        reservation = manager.reservation_map[event_id]
+        if rideshare_id is None:
+            name = request.form['name']
+            email = request.form['email']
+            # location = request.form['location']
+            num_seats = int(request.form['num_seats'])
 
-        p = Person(name, email)
-        rideshare = Rideshare(p, num_seats)
-        # reservation.rideshares.add(rideshare)
-        rideshare_id = reservation.register_rideshare(rideshare)
-        serialize_manager()
+            p = Person(name, email)
+            rideshare = Rideshare(p, num_seats)
+            # reservation.rideshares.add(rideshare)
+            rideshare_id = reservation.register_rideshare(rideshare)
+            serialize_manager()
 
-        return redirect('/event/{}/rideshare/{}'.format(
-            event_id, rideshare_id))
-    else:
-        print(reservation.rideshares)
-        rideshare = reservation.rideshares[rideshare_id]
-
-        rideshare_request_matches = \
-            reservation.get_rideshare_request_matches(rideshare)
-
-        html = "Thanks for offering a ride"
-        html += " -- you have {} of {} spots available".format(
-            rideshare.seats_available(),
-            rideshare.number_seats)
-        html += "<br><br>"
-        html += "<h1>Reserved</h1>"
-        if len(rideshare.riders) == 0:
-            html += "None Yet!"
+            return redirect('/event/{}/rideshare/{}'.format(
+                event_id, rideshare_id))
         else:
-            html += '<ul>'
-            for rider in rideshare.riders:
-                html += "<li>{}</li>".format(rider.name)
-            html += '</ul>'
-        html += "<br><br>"
-        html += "<h1>Open</h1>"
+            print(reservation.rideshares)
+            rideshare = reservation.rideshares[rideshare_id]
 
-        if len(rideshare_request_matches) == 0:
-            html += "No one needs a ride yet - we'll email you if you can help"
-        else:
-            html += 'Select up to {} requests to reserve spots'.format(rideshare.seats_available())
-            html += '<form action="reserved" method="post">'
-            for rideshare_request, request_id in rideshare_request_matches:
-                requester = rideshare_request.requester
-                html += '<input type="checkbox" '
-                html += 'name="id" value="{}" '.format(request_id)
-                html += '/>'
-                html += ' {}'.format(requester.name)
-                html += ' <br>'
-            html += '<input type="submit" value="Submit">'
-            html += '</form>'
+            rideshare_request_matches = \
+                reservation.get_rideshare_request_matches(rideshare)
 
-        return html
+            html = "Thanks for offering a ride"
+            html += " -- you have {} of {} spots available".format(
+                rideshare.seats_available(),
+                rideshare.number_seats)
+            html += "<br><br>"
+            html += "<h1>Reserved</h1>"
+            if len(rideshare.riders) == 0:
+                html += "None Yet!"
+            else:
+                html += '<ul>'
+                for rider in rideshare.riders:
+                    html += "<li>{}</li>".format(rider.name)
+                html += '</ul>'
+            html += "<br><br>"
+            html += "<h1>Open</h1>"
+
+            if len(rideshare_request_matches) == 0:
+                html += "No one needs a ride yet - we'll email you if you can help"
+            else:
+                html += 'Select up to {} requests to reserve spots'.format(rideshare.seats_available())
+                html += '<form action="reserved" method="post">'
+                for rideshare_request, request_id in rideshare_request_matches:
+                    requester = rideshare_request.requester
+                    html += '<input type="checkbox" '
+                    html += 'name="id" value="{}" '.format(request_id)
+                    html += '/>'
+                    html += ' {}'.format(requester.name)
+                    html += ' <br>'
+                html += '<input type="submit" value="Submit">'
+                html += '</form>'
+
+            return html
+    except Exception as e:
+        print('>>> error!')
+        import traceback
+        print(traceback.format_exc())
+        print(manager.reservation_map)
+        raise e
 
 
 @app.route('/event/<event_id>/rideshare/<rideshare_id>/reserved', methods=['POST'])
