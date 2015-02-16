@@ -32,6 +32,11 @@ except:
     reservation.rideshares['1'] = rideshare
     reservation.rideshare_requests['1'] = rrequest
 
+import pymongo
+from bson.objectid import ObjectId
+client = pymongo.MongoClient('mongodb://localhost:27017/db')
+db = client.get_default_database()
+
 
 @app.route('/')
 def index():
@@ -47,26 +52,31 @@ def event(event_id=None):
             organizer_name = request.form['org_name']
             organizer_email = request.form['org_email']
             organizer = Person(name=organizer_name,
-                               email=organizer_email)
+                               email=organizer_email,
+                               db=db)
 
             # create an event
             event_name = request.form['event_name']
-            event = Event(event_name, organizer)
+            event = Event(name=event_name, organizer=organizer, db=db)
 
-            location = request.form['location']
-            event.location = location if len(location) > 0 else None
+            # location = request.form['location']
+            # event.location = location if len(location) > 0 else None
 
-            event_id = manager.register_event(event)
-            serialize_manager()
+            reservation = Reservation(event=event, db=db)
 
-            print('registered event: {}'.format(manager.reservation_map))
+            # event_id = manager.register_event(event)
+            # serialize_manager()
 
-            return redirect('/event/{}'.format(event_id))
+            print('registered event: {}, reservation: {}'.format(event, reservation))
+
+            return redirect('/event/{}'.format(str(event._id)))
         else:
-            reservation = manager.reservation_map[event_id]
+            # reservation = manager.reservation_map[event_id]
+            event = Event(_id=ObjectId(event_id), db=db)
+
             return render_template('event.html',
-                                   event_name=reservation.event.name,
-                                   org_name=reservation.event.organizer.name)
+                                   event_name=event.name,
+                                   org_name=event.organizer.name)
     except Exception as e:
         print('>>> error!')
         import traceback

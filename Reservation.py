@@ -3,12 +3,20 @@ import random
 
 
 class Reservation:
-    def __init__(self, event):
+    def __init__(self, event, db=None):
         self.event = event
         self.rideshares = {}
         self.rideshare_requests = {}
 
         self.possible_matches = set()
+
+        self._id = None
+        if db:
+            self._id = db.reservations.insert(
+                {'event_id': event._id,
+                 'rideshares': [],
+                 'requests': []
+                 })
 
     def get_open_rideshares(self, seats_needed):
         open_rideshares = set()
