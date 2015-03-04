@@ -1,41 +1,47 @@
 
 import random
+from Rideshare import Rideshare
+from RideshareRequest import RideshareRequest
 
 
 class Reservation:
     def __init__(self, event, db=None):
         self.event = event
-        self.rideshares = {}
-        self.rideshare_requests = {}
+        self.rideshares = set()
+        self.rideshare_requests = set()
 
-        self.possible_matches = set()
-
+        self.db = db
         self._id = None
-        if db:
-            self._id = db.reservations.insert(
-                {'event_id': event._id,
-                 'rideshares': [],
-                 'requests': []
-                 })
+        if self.db:
+            db_reservation = {'event_id': event._id}
+            result = self.db.reservations.find_one(db_reservation)
+            if result:
+                self._id = result['_id']
+                self.rideshares = {Rideshare(_id=rid, db=self.db) for rid in result['rideshares']}
+                self.rideshare_requests = {RideshareRequest(_id=rid, db=self.db) for rid in result['requests']}
+            else:
+                self._id = db.reservations.insert(
+                    {'event_id': event._id,
+                     'rideshares': [],
+                     'requests': []
+                     })
 
     def get_open_rideshares(self, seats_needed):
         open_rideshares = set()
-        for rideshare_id in self.rideshares:
-            rideshare = self.rideshares[rideshare_id]
+        for rideshare in self.rideshares:
             if rideshare.seats_available() >= seats_needed:
-                open_rideshares.add((rideshare, rideshare_id))
+                open_rideshares.add(rideshare)
         return open_rideshares
 
     def get_rideshare_request_matches(self, rideshare):
         matches = set()
-        for request_id in self.rideshare_requests:
-            rideshare_request = self.rideshare_requests[request_id]
+        for rideshare_request in self.rideshare_requests:
 
             if rideshare_request.requester in rideshare.riders:
                 continue
 
             if rideshare in rideshare_request.acceptable_rideshares:
-                matches.add((rideshare_request, request_id))
+                matches.add(rideshare_request)
 
         return matches
 

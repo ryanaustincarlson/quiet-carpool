@@ -88,26 +88,32 @@ def event(event_id=None):
 @app.route('/event/<event_id>/request_ride', methods=['POST'])
 @app.route('/event/<event_id>/request_ride/<ride_request_id>/', methods=['GET'])
 def need_a_ride(event_id=None, ride_request_id=None):
+    # pdb.set_trace()
     try:
-        reservation = manager.reservation_map[event_id]
+        event = Event(_id=ObjectId(event_id), db=db)
+        reservation = Reservation(event=event, db=db)
+        # reservation = manager.reservation_map[event_id]
         if ride_request_id is None:
             name = request.form['name']
             email = request.form['email']
             num_seats = int(request.form['num_seats'])
 
             # create a request
-            rideshare_request = RideshareRequest(Person(name, email), num_seats)
-            request_id = reservation.register_rideshare_request(rideshare_request)
-            serialize_manager()
+            requester = Person(name=name, email=email, db=db)
+            rideshare_request = RideshareRequest(requester=requester,
+                                                 number_seats=num_seats,
+                                                 db=db)
+            # request_id = reservation.register_rideshare_request(rideshare_request)
+            # serialize_manager()
             return redirect('/event/{}/request_ride/{}'.format(
-                event_id, request_id))
+                event_id, str(rideshare_request._id)))
 
         else:
-            rideshare_request = reservation.rideshare_requests[ride_request_id]
+            # rideshare_request = reservation.rideshare_requests[ride_request_id]
+            rideshare_request = RideshareRequest(_id=ObjectId(ride_request_id), db=db)
 
             match = None
-            for rideshare_id in reservation.rideshares:
-                rideshare = reservation.rideshares[rideshare_id]
+            for rideshare in reservation.rideshares:
                 if rideshare_request.requester in rideshare.riders:
                     match = rideshare.ride_sharer
                     break
@@ -156,16 +162,20 @@ def need_a_ride(event_id=None, ride_request_id=None):
 @app.route('/event/<event_id>/request_ride/<ride_request_id>/requested',
            methods=['POST'])
 def rides_requested(event_id=None, ride_request_id=None):
-    reservation = manager.reservation_map[event_id]
-    rideshare_request = reservation.rideshare_requests[ride_request_id]
+    # event = Event(_id=ObjectId(event_id), db=db)
+    # reservation = Reservation(event=event, db=db)
+    # reservation = manager.reservation_map[event_id]
+    # rideshare_request = reservation.rideshare_requests[ride_request_id]
+    rideshare_request = RideshareRequest(_id=ObjectId(ride_request_id), db=db)
 
     acceptable_rideshare_ids = request.form.getlist('id')
     for rideshare_id in acceptable_rideshare_ids:
-        rideshare = reservation.rideshares[rideshare_id]
+        rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
-        rideshare_request.add_acceptable_rideshare(rideshare)
+        if rideshare.number_seats is not None:
+            rideshare_request.add_acceptable_rideshare(rideshare)
 
-    serialize_manager()
+    # serialize_manager()
 
     return "Great! We've logged your preferences"
 
@@ -174,24 +184,27 @@ def rides_requested(event_id=None, ride_request_id=None):
 @app.route('/event/<event_id>/rideshare/<rideshare_id>/', methods=['GET'])
 def have_a_ride(event_id=None, rideshare_id=None):
     try:
-        reservation = manager.reservation_map[event_id]
+        event = Event(_id=ObjectId(event_id), db=db)
+        reservation = Reservation(event=event, db=db)
+        # reservation = manager.reservation_map[event_id]
         if rideshare_id is None:
             name = request.form['name']
             email = request.form['email']
             # location = request.form['location']
             num_seats = int(request.form['num_seats'])
 
-            p = Person(name, email)
-            rideshare = Rideshare(p, num_seats)
+            p = Person(name=name, email=email, db=db)
+            rideshare = Rideshare(ride_sharer=p, number_seats=num_seats, db=db)
             # reservation.rideshares.add(rideshare)
-            rideshare_id = reservation.register_rideshare(rideshare)
-            serialize_manager()
+            # rideshare_id = reservation.register_rideshare(rideshare)
+            # serialize_manager()
 
             return redirect('/event/{}/rideshare/{}'.format(
-                event_id, rideshare_id))
+                event_id, str(rideshare._id)))
         else:
             print(reservation.rideshares)
-            rideshare = reservation.rideshares[rideshare_id]
+            # rideshare = reservation.rideshares[rideshare_id]
+            rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
             rideshare_request_matches = \
                 reservation.get_rideshare_request_matches(rideshare)
@@ -238,17 +251,21 @@ def have_a_ride(event_id=None, rideshare_id=None):
 
 @app.route('/event/<event_id>/rideshare/<rideshare_id>/reserved', methods=['POST'])
 def rides_reserved(event_id=None, rideshare_id=None):
-    reservation = manager.reservation_map[event_id]
-    rideshare = reservation.rideshares[rideshare_id]
+    # event = Event(_id=ObjectId(event_id), db=db)
+    # reservation = Reservation(event=event, db=db)
+    # reservation = manager.reservation_map[event_id]
+    # rideshare = reservation.rideshares[rideshare_id]
+    rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
     reserved_request_ids = request.form.getlist('id')
     for request_id in reserved_request_ids:
-        rideshare_request = reservation.rideshare_requests[request_id]
-        requester = rideshare_request.requester
+        rideshare_request = RideshareRequest(_id=ObjectId(request_id), db=db)
+        # rideshare_request = reservation.rideshare_requests[request_id]
+        if rideshare_request.number_seats is not None:
+            requester = rideshare_request.requeste
+            rideshare.reserve_seat(requester)
 
-        rideshare.reserve_seat(requester)
-
-    serialize_manager()
+    # serialize_manager()
 
     return redirect('/event/{}/rideshare/{}'.format(
                     event_id, rideshare_id))

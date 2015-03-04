@@ -6,17 +6,26 @@ class Person:
 
         self.location = None
 
-        self._id = None
-        if _id and db:
-            self._id = _id
-            db_person = db.people.find({'_id': _id})[0]
-            self.name = db_person['name']
-            self.email = db_person['email']
-        elif db:
-            self._id = db.people.insert(
-                {'name': self.name,
-                 'email': self.email
-                 })
+        self.db = db
+        self._id = _id
+        if self.db:
+            if self._id:
+                self._init_with_query({'_id': _id})
+            else:
+                db_person = {'name': self.name,
+                             'email': self.email
+                             }
+                success = self._init_with_query(db_person)
+                if not success:
+                    self._id = self.db.people.insert(db_person)
+
+    def _init_with_query(self, query):
+        result = self.db.people.find_one(query)
+        if result:
+            self._id = result['_id']
+            self.name = result['name']
+            self.email = result['email']
+        return result is not None
 
     def __eq__(self, other):
         return self.email == other.email
