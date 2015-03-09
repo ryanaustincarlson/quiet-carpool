@@ -1,36 +1,37 @@
 
 import pdb
-import pickle
+# import pickle
 
 from flask import Flask, request, redirect, render_template
 app = Flask(__name__)
 
 from Person import Person
 from Event import Event
-from Reservation import Reservation
+from EventManager import EventManager
+# from Reservation import Reservation
 from RideshareRequest import RideshareRequest
 from Rideshare import Rideshare
-from ReservationManager import ReservationManager
+# from ReservationManager import ReservationManager
 
 PICKLE_FNAME = 'reservation-manager.pickle'
 
-try:
-    with open(PICKLE_FNAME, 'rb') as f:
-        manager = pickle.load(f)
-except:
-    print("creating a brand new manager")
-    manager = ReservationManager()
-    reservation = Reservation(Event('partytime', Person('ryan', 'rcarlson@something.com')))
-    manager.reservation_map['1'] = reservation
+# try:
+#     with open(PICKLE_FNAME, 'rb') as f:
+#         manager = pickle.load(f)
+# except:
+#     print("creating a brand new manager")
+#     manager = ReservationManager()
+#     reservation = Reservation(Event('partytime', Person('ryan', 'rcarlson@something.com')))
+#     manager.reservation_map['1'] = reservation
 
-    requester = Person('ambarish', 'ajoshi@something.com')
-    ridesharer = Person('susan', 'sberman@something.com')
+#     requester = Person('ambarish', 'ajoshi@something.com')
+#     ridesharer = Person('susan', 'sberman@something.com')
 
-    rrequest = RideshareRequest(requester, 1)
-    rideshare = Rideshare(ridesharer, 3)
+#     rrequest = RideshareRequest(requester, 1)
+#     rideshare = Rideshare(ridesharer, 3)
 
-    reservation.rideshares['1'] = rideshare
-    reservation.rideshare_requests['1'] = rrequest
+#     reservation.rideshares['1'] = rideshare
+#     reservation.rideshare_requests['1'] = rrequest
 
 import pymongo
 from bson.objectid import ObjectId
@@ -62,12 +63,13 @@ def event(event_id=None):
             # location = request.form['location']
             # event.location = location if len(location) > 0 else None
 
-            reservation = Reservation(event=event, db=db)
+            # reservation = Reservation(event=event, db=db)
 
             # event_id = manager.register_event(event)
             # serialize_manager()
 
-            print('registered event: {}, reservation: {}'.format(event, reservation))
+            # print('registered event: {}, reservation: {}'.format(event, reservation))
+            print('registered event: {}'.format(event))
 
             return redirect('/event/{}'.format(str(event._id)))
         else:
@@ -81,7 +83,7 @@ def event(event_id=None):
         print('>>> error!')
         import traceback
         print(traceback.format_exc())
-        print(manager.reservation_map)
+        #print(manager.reservation_map)
         raise e
 
 
@@ -91,7 +93,8 @@ def need_a_ride(event_id=None, ride_request_id=None):
     # pdb.set_trace()
     try:
         event = Event(_id=ObjectId(event_id), db=db)
-        reservation = Reservation(event=event, db=db)
+        manager = EventManager(event=event, db=db)
+        # reservation = Reservation(event=event, db=db)
         # reservation = manager.reservation_map[event_id]
         if ride_request_id is None:
             name = request.form['name']
@@ -102,6 +105,7 @@ def need_a_ride(event_id=None, ride_request_id=None):
             requester = Person(name=name, email=email, db=db)
             rideshare_request = RideshareRequest(requester=requester,
                                                  number_seats=num_seats,
+                                                 event=event,
                                                  db=db)
             # request_id = reservation.register_rideshare_request(rideshare_request)
             # serialize_manager()
@@ -110,10 +114,11 @@ def need_a_ride(event_id=None, ride_request_id=None):
 
         else:
             # rideshare_request = reservation.rideshare_requests[ride_request_id]
-            rideshare_request = RideshareRequest(_id=ObjectId(ride_request_id), db=db)
+            rideshare_request = RideshareRequest(_id=ObjectId(ride_request_id),
+                                                 db=db)
 
             match = None
-            for rideshare in reservation.rideshares:
+            for rideshare in manager.get_rideshares():
                 if rideshare_request.requester in rideshare.riders:
                     match = rideshare.ride_sharer
                     break
@@ -124,7 +129,7 @@ def need_a_ride(event_id=None, ride_request_id=None):
 
             else:
 
-                open_rideshares = reservation.get_open_rideshares(
+                open_rideshares = manager.get_open_rideshares(
                     rideshare_request.number_seats)
 
                 if len(open_rideshares) == 0:
@@ -138,10 +143,10 @@ def need_a_ride(event_id=None, ride_request_id=None):
                     html += '<br><br>'
                     html += 'Select any rides you would be happy taking'
                     html += '<form action="requested" method="post">'
-                    for rideshare, rideshare_id in open_rideshares:
+                    for rideshare in open_rideshares:
                         ride_sharer = rideshare.ride_sharer
                         html += '<input type="checkbox" '
-                        html += 'name="id" value="{}" '.format(rideshare_id)
+                        html += 'name="id" value="{}" '.format(str(rideshare._id))
                         html += '/>'
                         html += ' {} ({} seat{})'.format(
                             ride_sharer.name, rideshare.seats_available(),
@@ -155,7 +160,7 @@ def need_a_ride(event_id=None, ride_request_id=None):
         print('>>> error!')
         import traceback
         print(traceback.format_exc())
-        print(manager.reservation_map)
+        #print(manager.reservation_map)
         raise e
 
 
@@ -185,7 +190,8 @@ def rides_requested(event_id=None, ride_request_id=None):
 def have_a_ride(event_id=None, rideshare_id=None):
     try:
         event = Event(_id=ObjectId(event_id), db=db)
-        reservation = Reservation(event=event, db=db)
+        manager = EventManager(event=event, db=db)
+        # reservation = Reservation(event=event, db=db)
         # reservation = manager.reservation_map[event_id]
         if rideshare_id is None:
             name = request.form['name']
@@ -194,7 +200,7 @@ def have_a_ride(event_id=None, rideshare_id=None):
             num_seats = int(request.form['num_seats'])
 
             p = Person(name=name, email=email, db=db)
-            rideshare = Rideshare(ride_sharer=p, number_seats=num_seats, db=db)
+            rideshare = Rideshare(ride_sharer=p, number_seats=num_seats, event=event, db=db)
             # reservation.rideshares.add(rideshare)
             # rideshare_id = reservation.register_rideshare(rideshare)
             # serialize_manager()
@@ -202,12 +208,12 @@ def have_a_ride(event_id=None, rideshare_id=None):
             return redirect('/event/{}/rideshare/{}'.format(
                 event_id, str(rideshare._id)))
         else:
-            print(reservation.rideshares)
+            print(manager.get_rideshares())
             # rideshare = reservation.rideshares[rideshare_id]
             rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
             rideshare_request_matches = \
-                reservation.get_rideshare_request_matches(rideshare)
+                manager.get_rideshare_request_matches(rideshare)
 
             html = "Thanks for offering a ride"
             html += " -- you have {} of {} spots available".format(
@@ -230,10 +236,10 @@ def have_a_ride(event_id=None, rideshare_id=None):
             else:
                 html += 'Select up to {} requests to reserve spots'.format(rideshare.seats_available())
                 html += '<form action="reserved" method="post">'
-                for rideshare_request, request_id in rideshare_request_matches:
+                for rideshare_request in rideshare_request_matches:
                     requester = rideshare_request.requester
                     html += '<input type="checkbox" '
-                    html += 'name="id" value="{}" '.format(request_id)
+                    html += 'name="id" value="{}" '.format(str(rideshare_request._id))
                     html += '/>'
                     html += ' {}'.format(requester.name)
                     html += ' <br>'
@@ -245,7 +251,7 @@ def have_a_ride(event_id=None, rideshare_id=None):
         print('>>> error!')
         import traceback
         print(traceback.format_exc())
-        print(manager.reservation_map)
+        #print(manager.reservation_map)
         raise e
 
 
@@ -255,6 +261,7 @@ def rides_reserved(event_id=None, rideshare_id=None):
     # reservation = Reservation(event=event, db=db)
     # reservation = manager.reservation_map[event_id]
     # rideshare = reservation.rideshares[rideshare_id]
+    pdb.set_trace()
     rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
     reserved_request_ids = request.form.getlist('id')
@@ -262,7 +269,7 @@ def rides_reserved(event_id=None, rideshare_id=None):
         rideshare_request = RideshareRequest(_id=ObjectId(request_id), db=db)
         # rideshare_request = reservation.rideshare_requests[request_id]
         if rideshare_request.number_seats is not None:
-            requester = rideshare_request.requeste
+            requester = rideshare_request.requester
             rideshare.reserve_seat(requester)
 
     # serialize_manager()
