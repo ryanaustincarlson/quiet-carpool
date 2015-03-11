@@ -1,5 +1,6 @@
 
 import pdb
+import os
 # import pickle
 
 from flask import Flask, request, redirect, render_template
@@ -35,7 +36,11 @@ PICKLE_FNAME = 'reservation-manager.pickle'
 
 import pymongo
 from bson.objectid import ObjectId
-client = pymongo.MongoClient('mongodb://localhost:27017/db')
+mongo_uri = os.environ.get('MONGOLAB_URI')
+if not mongo_uri:
+    mongo_uri = 'mongodb://localhost:27017/db'
+print('mongo uri: {}'.format(mongo_uri))
+client = pymongo.MongoClient(mongo_uri)
 db = client.get_default_database()
 
 
@@ -261,7 +266,7 @@ def rides_reserved(event_id=None, rideshare_id=None):
     # reservation = Reservation(event=event, db=db)
     # reservation = manager.reservation_map[event_id]
     # rideshare = reservation.rideshares[rideshare_id]
-    pdb.set_trace()
+    # pdb.set_trace()
     rideshare = Rideshare(_id=ObjectId(rideshare_id), db=db)
 
     reserved_request_ids = request.form.getlist('id')
